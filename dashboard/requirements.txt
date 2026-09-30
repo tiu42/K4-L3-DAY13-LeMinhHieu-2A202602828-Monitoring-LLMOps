@@ -1,0 +1,5 @@
+# Cài vào venv riêng (.venv-dashboard), KHÔNG cài chung với requirements.txt của API.
+streamlit>=1.37
+plotly
+pandas
+pyyaml

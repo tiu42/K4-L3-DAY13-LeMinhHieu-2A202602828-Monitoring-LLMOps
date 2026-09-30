@@ -7,7 +7,23 @@ primary_slo:
     total_event: 'event == "request_received"'
   target_percent: 99.5
   error_budget_percent: 0.5
-  note: Học viên phải giải thích hoặc điều chỉnh ngưỡng bằng baseline của mình. Ví dụ nếu có 10,000 request trong cửa sổ 28 ngày, error budget 0.5% nghĩa là tối đa 50 request được phép không đạt SLO.
+  note: >-
+    Giữ ngưỡng 3000 ms và target 99.5% dựa trên baseline của tôi (CP0/CP1, mock LLM, load_test 10 request/lượt):
+    request bình thường có latency ~390–420 ms, TTFT P95 = 50 ms, nên 3000 ms cho headroom ~7x và vẫn là mức
+    người dùng chat chấp nhận được. Ngoại lệ duy nhất là request đầu tiên sau khi khởi động API (3522 ms ở CP0,
+    6267 ms ở CP1) do cold start: khởi tạo Langfuse client + fetch prompt lần đầu (timeout 2 s). Request này là "bad
+    event" thật với người dùng nên không loại khỏi SLI; mitigation là warm-up sau deploy thay vì nới ngưỡng.
+  error_budget:
+    formula: 'allowed_bad_requests = total_requests * (100 - target_percent) / 100'
+    examples:
+      - total_requests: 10000
+        allowed_bad_requests: 50
+        comment: 10,000 request trong 28 ngày → tối đa 50 request lỗi hoặc chậm hơn 3000 ms.
+      - total_requests: 100
+        allowed_bad_requests: 0.5
+        comment: >-
+          Ở quy mô lab (~100 request mỗi buổi), chỉ 1 request cold start đã tiêu 200% error budget;
+          vì vậy phải warm-up API trước khi đo, nếu không SLO bị breach ngay từ request đầu.
 guardrails:
   error_rate_pct_max: 2
   daily_cost_usd_max: 2.5
